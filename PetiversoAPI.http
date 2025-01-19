@@ -1,0 +1,6 @@
+@PetiversoAPI_HostAddress = http://localhost:5067
+
+GET {{PetiversoAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
