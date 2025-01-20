@@ -23,16 +23,16 @@ namespace PetiversoAPI.Controllers
         public async Task<IActionResult> Register([FromBody] UserDto userDto)
         {
             if (string.IsNullOrWhiteSpace(userDto.Username) || string.IsNullOrWhiteSpace(userDto.Password))
-                return BadRequest(new { success = false, message = "Username e senha são obrigatórios." });
+                return BadRequest(new { success = false, message = "Usuario e senha são obrigatórios." });
 
             if (userDto.Username.Length < 5 || userDto.Password.Length < 8)
-                return BadRequest(new { success = false, message = "Username deve ter no mínimo 5 caracteres e senha, 8 caracteres." });
+                return BadRequest(new { success = false, message = "Usuario deve ter no mínimo 5 caracteres e senha, 8 caracteres." });
 
             var result = await _userService.RegisterUserAsync(userDto);
             if (!result.Success)
                 return Conflict(new { success = false, message = result.Message });
 
-            return Ok(new { success = true, message = "Usuário registrado com sucesso." });
+            return Ok(new { success = true, message = "Usuário registrado com sucesso.", UserId = result.Data });
         }
 
         [HttpPost("login")]

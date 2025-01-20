@@ -6,6 +6,8 @@ namespace PetiversoAPI.Models
     {
         public int Id { get; set; }
         [Required, MaxLength(50)]
+        public Guid UserId { get; set; } = Guid.NewGuid(); // Gerado pelo banco, se configurado.
+
         public string Username { get; set; } = null!;
         [Required]
         public string PasswordHash { get; set; } = null!;

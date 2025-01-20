@@ -1,12 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PetiversoAPI.DTOs;
 using PetiversoAPI.Models;
+using static PetiversoAPI.Services.UserService;
 
 namespace PetiversoAPI.Services
 {
     public interface IUserService
     {
-        Task<ServiceResponse> RegisterUserAsync(UserDto userDto);
+        Task<ServiceResponse<Guid?>> RegisterUserAsync(UserDto userDto);
         Task<AuthResponse> AuthenticateUserAsync(UserDto userDto);
         Task<ServiceResponse> LogoutUserAsync(string sessionToken);
     }
@@ -22,11 +23,15 @@ namespace PetiversoAPI.Services
             _passwordHasher = passwordHasher;
         }
 
-        public async Task<ServiceResponse> RegisterUserAsync(UserDto userDto)
+        public async Task<ServiceResponse<Guid?>> RegisterUserAsync(UserDto userDto)
         {
             if (await _context.Users.AnyAsync(u => u.Username == userDto.Username))
             {
-                return new ServiceResponse { Success = false, Message = "Já existe um usuário com esse nome." };
+                return new ServiceResponse<Guid?>
+                {
+                    Success = false,
+                    Message = "Já existe um usuário com esse nome."
+                };
             }
 
             var user = new User
@@ -39,8 +44,21 @@ namespace PetiversoAPI.Services
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return new ServiceResponse { Success = true };
+            return new ServiceResponse<Guid?>
+            {
+                Success = true,
+                Data = user.UserId // UUID gerado pelo banco de dados.
+            };
         }
+
+
+        public class ServiceResponse<T>
+        {
+            public bool Success { get; set; }
+            public string? Message { get; set; }
+            public T? Data { get; set; }
+        }
+
 
         public async Task<AuthResponse> AuthenticateUserAsync(UserDto userDto)
         {
