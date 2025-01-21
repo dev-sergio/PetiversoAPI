@@ -10,14 +10,9 @@ namespace PetiversoAPI.Controllers
 {
     [Route("api/auth")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class AuthController(IUserService userService) : ControllerBase
     {
-        private readonly IUserService _userService;
-
-        public AuthController(IUserService userService)
-        {
-            _userService = userService;
-        }
+        private readonly IUserService _userService = userService;
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserDto userDto)
@@ -47,13 +42,13 @@ namespace PetiversoAPI.Controllers
 
             var claims = new List<Claim>
             {
-                new Claim("SessionToken", result.SessionToken!),
-                new Claim(ClaimTypes.Name, result.Username!)
+                new("SessionToken", result.SessionToken!),
+                new(ClaimTypes.Name, result.Username!)
             };
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
-            return Ok(new { success = true, message = "Login realizado com sucesso." });
+            return Ok(new { success = true, message = "Login realizado com sucesso.", userId = result.UserId });
         }
 
         [HttpPost("logout")]
@@ -77,7 +72,7 @@ namespace PetiversoAPI.Controllers
             var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
             var username = isAuthenticated ? User.FindFirst(ClaimTypes.Name)?.Value : null;
 
-            return Ok(new { success = true, authenticated = isAuthenticated, username = username });
+            return Ok(new { success = true, authenticated = isAuthenticated, username });
         }
     }
 }

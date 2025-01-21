@@ -41,5 +41,6 @@ namespace PetiversoAPI.Models
     {
         public string? Username { get; set; }
         public string? SessionToken { get; set; }
+        public Guid UserId { get; internal set; }
     }
 }

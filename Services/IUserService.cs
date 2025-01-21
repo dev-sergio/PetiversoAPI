@@ -12,16 +12,10 @@ namespace PetiversoAPI.Services
         Task<ServiceResponse> LogoutUserAsync(string sessionToken);
     }
 
-    public class UserService : IUserService
+    public class UserService(AppDbContext context, PasswordHasher passwordHasher) : IUserService
     {
-        private readonly AppDbContext _context;
-        private readonly PasswordHasher _passwordHasher;
-
-        public UserService(AppDbContext context, PasswordHasher passwordHasher)
-        {
-            _context = context;
-            _passwordHasher = passwordHasher;
-        }
+        private readonly AppDbContext _context = context;
+        private readonly PasswordHasher _passwordHasher = passwordHasher;
 
         public async Task<ServiceResponse<Guid?>> RegisterUserAsync(UserDto userDto)
         {
@@ -84,7 +78,7 @@ namespace PetiversoAPI.Services
 
             await RegisterLoginAttempt(user.Id, userDto.Username, true);
 
-            return new AuthResponse { Success = true, Username = user.Username, SessionToken = sessionToken };
+            return new AuthResponse { Success = true, Username = user.Username, SessionToken = sessionToken, UserId = user.UserId };
         }
 
         public async Task<ServiceResponse> LogoutUserAsync(string sessionToken)
