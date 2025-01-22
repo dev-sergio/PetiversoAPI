@@ -1,15 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PetiversoAPI.DTOs;
 using PetiversoAPI.Models;
-using static PetiversoAPI.Services.UserService;
 
 namespace PetiversoAPI.Services
 {
     public interface IUserService
     {
         Task<ServiceResponse<Guid?>> RegisterUserAsync(UserDto userDto);
-        Task<AuthResponse> AuthenticateUserAsync(UserDto userDto);
+        Task<AuthResponse> AuthenticateUserAsync(LoginDto loginDto);
         Task<ServiceResponse> LogoutUserAsync(string sessionToken);
+        Task<UserResponseDto?> FindUserByIdAsync(Guid userId);
     }
 
     public class UserService(AppDbContext context, PasswordHasher passwordHasher) : IUserService
@@ -19,18 +19,19 @@ namespace PetiversoAPI.Services
 
         public async Task<ServiceResponse<Guid?>> RegisterUserAsync(UserDto userDto)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == userDto.Username))
+            if (await _context.Users.AnyAsync(u => u.Username == userDto.Username || u.Email == userDto.Email))
             {
                 return new ServiceResponse<Guid?>
                 {
                     Success = false,
-                    Message = "Já existe um usuário com esse nome."
+                    Message = "Username ou Email já está em uso."
                 };
             }
 
             var user = new User
             {
                 Username = userDto.Username,
+                Email = userDto.Email,
                 PasswordHash = _passwordHasher.HashPassword(userDto.Password),
                 CreatedAt = DateTime.UtcNow
             };
@@ -41,26 +42,17 @@ namespace PetiversoAPI.Services
             return new ServiceResponse<Guid?>
             {
                 Success = true,
-                Data = user.UserId // UUID gerado pelo banco de dados.
+                Data = user.UserId
             };
         }
 
-
-        public class ServiceResponse<T>
+        public async Task<AuthResponse> AuthenticateUserAsync(LoginDto loginDto)
         {
-            public bool Success { get; set; }
-            public string? Message { get; set; }
-            public T? Data { get; set; }
-        }
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginDto.Username);
 
-
-        public async Task<AuthResponse> AuthenticateUserAsync(UserDto userDto)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == userDto.Username);
-
-            if (user == null || !_passwordHasher.VerifyPassword(user.PasswordHash, userDto.Password))
+            if (user == null || !_passwordHasher.VerifyPassword(user.PasswordHash, loginDto.Password))
             {
-                await RegisterLoginAttempt(user?.Id, userDto.Username, false);
+                await RegistrarTentativaDeLogin(user?.UserId, loginDto.Username, false);
                 return new AuthResponse { Success = false, Message = "Usuário ou senha inválidos." };
             }
 
@@ -76,7 +68,8 @@ namespace PetiversoAPI.Services
             _context.Sessions.Add(session);
             await _context.SaveChangesAsync();
 
-            await RegisterLoginAttempt(user.Id, userDto.Username, true);
+            await RegistrarTentativaDeLogin(user.UserId, loginDto.Username, true);
+
 
             return new AuthResponse { Success = true, Username = user.Username, SessionToken = sessionToken, UserId = user.UserId };
         }
@@ -96,18 +89,55 @@ namespace PetiversoAPI.Services
             return new ServiceResponse { Success = true };
         }
 
-        private async Task RegisterLoginAttempt(int? userId, string username, bool success)
+        public async Task<UserResponseDto?> FindUserByIdAsync(Guid userId)
         {
-            var loginAttempt = new LoginAttempt
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+
+            if (user == null)
+                return null;
+
+            return new UserResponseDto
+            {
+                UserId = user.UserId,
+                Username = user.Username,
+                Email = user.Email,
+                CreatedAt = user.CreatedAt
+            };
+        }
+
+        private async Task RegistrarTentativaDeLogin(Guid? userId, string username, bool sucesso)
+        {
+            var tentativaDeLogin = new LoginAttempt
             {
                 UserId = userId,
                 Username = username,
-                Success = success,
+                Success = sucesso,
                 AttemptedAt = DateTime.UtcNow
             };
 
-            _context.LoginAttempts.Add(loginAttempt);
+            _context.LoginAttempts.Add(tentativaDeLogin);
             await _context.SaveChangesAsync();
         }
+
+    }
+
+    public class ServiceResponse
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+    }
+
+    // Versão genérica:
+    public class ServiceResponse<T> : ServiceResponse
+    {
+        public T? Data { get; set; }
+    }
+
+
+    public class AuthResponse : ServiceResponse<object>
+    {
+        public string? Username { get; set; }
+        public string? SessionToken { get; set; }
+        public Guid? UserId { get; set; }
     }
 }
