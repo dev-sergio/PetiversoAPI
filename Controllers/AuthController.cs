@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using PetiversoAPI.Services;
 using PetiversoAPI.DTOs;
+using PetiversoAPI.Models;
 
 namespace PetiversoAPI.Controllers
 {
@@ -42,6 +43,7 @@ namespace PetiversoAPI.Controllers
             var claims = new List<Claim>
             {
                 new("SessionToken", result.SessionToken!),
+                new(ClaimTypes.NameIdentifier, result.UserId.ToString()!), // userId
                 new(ClaimTypes.Name, result.Username!)
             };
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

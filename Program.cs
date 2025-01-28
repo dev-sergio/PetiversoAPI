@@ -36,6 +36,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 // Injeção de dependências
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPetService, PetService>();
 builder.Services.AddSingleton<PasswordHasher>();
 
 // Adicionar controladores
