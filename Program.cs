@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using PetiversoAPI.Middleware;
 using PetiversoAPI.Models;
 using PetiversoAPI.Services;
 
@@ -32,6 +34,31 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/api/auth/login";
         options.LogoutPath = "/api/auth/logout";
         options.SlidingExpiration = true;
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnValidatePrincipal = async context =>
+            {
+                var sessionToken = context.Principal?.FindFirst("SessionToken")?.Value;
+                if (sessionToken == null) return;
+
+                using var scope = context.HttpContext.RequestServices.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var session = await dbContext.Sessions.FirstOrDefaultAsync(s => s.SessionToken == sessionToken);
+                if (session == null || session.ExpiresAt < DateTime.UtcNow)
+                {
+                    // Sessão inválida ou expirada, logout automático
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                }
+                else
+                {
+                    // Renova a validade da sessão
+                    session.ExpiresAt = DateTime.UtcNow.AddHours(8);
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+        };
     });
 
 // Injeção de dependências
@@ -54,6 +81,7 @@ app.UseCors(corsPolicyName);
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
+app.UseMiddleware<SessionExpirationMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

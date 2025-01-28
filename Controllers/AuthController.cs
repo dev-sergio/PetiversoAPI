@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using PetiversoAPI.Services;
 using PetiversoAPI.DTOs;
-using PetiversoAPI.Models;
 
 namespace PetiversoAPI.Controllers
 {
@@ -47,7 +46,11 @@ namespace PetiversoAPI.Controllers
                 new(ClaimTypes.Name, result.Username!)
             };
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), new AuthenticationProperties
+            {
+                ExpiresUtc = DateTime.UtcNow.AddHours(8), // Validade do cookie
+                IsPersistent = true
+            });
 
             return Ok(new { success = true, message = "Login realizado com sucesso.", userId = result.UserId });
         }

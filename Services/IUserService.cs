@@ -86,7 +86,7 @@ namespace PetiversoAPI.Services
             _context.Sessions.Remove(session);
             await _context.SaveChangesAsync();
 
-            return new ServiceResponse { Success = true };
+            return new ServiceResponse { Success = true, Message = "Logout realizado com sucesso." };
         }
 
         public async Task<UserResponseDto?> FindUserByIdAsync(Guid userId)

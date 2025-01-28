@@ -34,9 +34,6 @@ CREATE TABLE PetPhotos (
     FOREIGN KEY (PetId) REFERENCES Pets (PetId) -- Chave estrangeira para a tabela Pets
 );
 
-
-
-
 CREATE TABLE Sessions (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     UserId INT NOT NULL,
