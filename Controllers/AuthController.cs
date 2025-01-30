@@ -36,8 +36,7 @@ namespace PetiversoAPI.Controllers
                 return BadRequest(new { success = false, message = "Username e senha são obrigatórios." });
 
             var result = await _userService.AuthenticateUserAsync(loginDto);
-            if (!result.Success)
-                return Unauthorized(new { success = false, message = result.Message });
+            if (!result.Success) return Unauthorized(new { success = false, message = result.Message });            
 
             var claims = new List<Claim>
             {
