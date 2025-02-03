@@ -12,6 +12,8 @@ namespace PetiversoAPI.Services
         Task<ServiceResponse<List<string>>> GetPhotosAsync(Guid petId);
         Task<ServiceResponse> DeletePhotoAsync(Guid photoId);
         Task<bool> IsUserOwnerOfPetAsync(Guid userId, Guid petId);
+        Task<ServiceResponse<bool>> UpdatePetAsync(Guid petId, Guid userId, PetDto petDto);
+
     }
 
     public class PetService(AppDbContext context, IConfiguration configuration) : IPetService
@@ -90,6 +92,51 @@ namespace PetiversoAPI.Services
                 Message = "Pet adicionado com sucesso!"
             };
         }
+
+        public async Task<ServiceResponse<bool>> UpdatePetAsync(Guid petId, Guid userId, PetDto petDto)
+        {
+            var pet = await _context.Pets.FindAsync(petId);
+            if (pet == null || pet.UserId != userId)
+                return new ServiceResponse<bool> { Success = false, Message = "Pet não encontrado ou não pertence ao usuário." };
+
+            // Atualiza os campos permitidos
+            pet.Name = petDto.Name;
+            pet.Species = petDto.Species;
+            pet.Gender = petDto.Gender;
+            pet.Breed = petDto.Breed;
+            pet.ColorPri = petDto.ColorPri;
+            pet.ColorSec = petDto.ColorSec;
+            pet.Size = petDto.Size;
+            pet.BirthDate = petDto.BirthDate;
+
+            // Atualiza a foto se necessário
+            if (petDto.PhotoFile != null && petDto.PhotoFile.Length > 0)
+            {
+                var storagePath = _configuration["PhotoStorage:Path"];
+                if (string.IsNullOrWhiteSpace(storagePath))
+                    return new ServiceResponse<bool> { Success = false, Message = "Diretório de armazenamento não configurado." };
+
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(petDto.PhotoFile.FileName)}";
+                var photoPath = Path.Combine(storagePath, fileName);
+
+                try
+                {
+                    using var stream = new FileStream(photoPath, FileMode.Create);
+                    await petDto.PhotoFile.CopyToAsync(stream);
+                    pet.Photo = photoPath; // Atualiza o caminho da foto
+                }
+                catch (Exception ex)
+                {
+                    return new ServiceResponse<bool> { Success = false, Message = $"Erro ao salvar a foto: {ex.Message}" };
+                }
+            }
+
+            _context.Pets.Update(pet);
+            await _context.SaveChangesAsync();
+
+            return new ServiceResponse<bool> { Success = true, Message = "Pet atualizado com sucesso!" };
+        }
+
 
         public async Task<ServiceResponse<IEnumerable<Pet>>> GetUserPetsAsync(Guid userId)
         {

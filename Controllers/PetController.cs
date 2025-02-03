@@ -36,6 +36,21 @@ namespace PetiversoAPI.Controllers
             return Ok(result);
         }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdatePet(Guid id, [FromForm] PetDto petDto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null || !Guid.TryParse(userId, out var parsedUserId))
+                return Unauthorized(new { success = false, message = "Usuário não autenticado." });
+
+            var result = await _petService.UpdatePetAsync(id, parsedUserId, petDto);
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+
 
         [HttpPost("{petId}/photos")]
         public async Task<IActionResult> UploadPhoto(Guid petId, IFormFile photoFile)
