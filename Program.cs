@@ -1,11 +1,43 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using PetiversoAPI.Middleware;
 using PetiversoAPI.Models;
 using PetiversoAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Adiciona serviços do Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Petiverso API", Version = "v1" });
+
+    // Definir autenticação baseada em Cookie
+    options.AddSecurityDefinition("Session", new OpenApiSecurityScheme
+    {
+        Name = "Cookie",
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Cookie,
+        Description = "Session authentication via HttpOnly Cookie"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Session"
+                }
+            },
+            new List<string>()
+        }
+    });
+});
 
 // Configuração do banco de dados
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -77,9 +109,13 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-app.UseCors(corsPolicyName);
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+app.UseCors(corsPolicyName);
+
 app.UseAuthentication();
 app.UseMiddleware<SessionExpirationMiddleware>();
 app.UseAuthorization();

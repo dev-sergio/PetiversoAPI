@@ -12,7 +12,7 @@ namespace PetiversoAPI.Controllers
         private readonly IPetService _petService = petService;
 
         [HttpPost]
-        public async Task<IActionResult> AddPet([FromBody] PetDto petDto)
+        public async Task<IActionResult> AddPet([FromForm] PetDto petDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null || !Guid.TryParse(userId, out var parsedUserId))

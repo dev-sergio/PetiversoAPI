@@ -29,15 +29,55 @@ namespace PetiversoAPI.Services
 
         public async Task<ServiceResponse<Guid>> AddPetAsync(Guid userId, PetDto petDto)
         {
+            string photoPath;
+
+            // Verifica se uma foto foi enviada e salva no servidor
+            if (petDto.PhotoFile != null && petDto.PhotoFile.Length > 0)
+            {
+                var storagePath = _configuration["PhotoStorage:Path"];
+                if (string.IsNullOrWhiteSpace(storagePath))
+                {
+                    return new ServiceResponse<Guid> { Success = false, Message = "Diretório de armazenamento não configurado." };
+                }
+
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(petDto.PhotoFile.FileName)}";
+                photoPath = Path.Combine(storagePath, fileName);
+
+                try
+                {
+                    using var stream = new FileStream(photoPath, FileMode.Create);
+                    await petDto.PhotoFile.CopyToAsync(stream);
+                }
+                catch (Exception ex)
+                {
+                    return new ServiceResponse<Guid> { Success = false, Message = $"Erro ao salvar a foto: {ex.Message}" };
+                }
+            }
+            else
+            {
+                var storagePath = _configuration["PhotoStorage:Path"];
+                if (string.IsNullOrWhiteSpace(storagePath))
+                {
+                    return new ServiceResponse<Guid> { Success = false, Message = "Diretório de armazenamento não configurado." };
+                }
+
+                var fileName = "profile.jpg";
+                photoPath = Path.Combine(storagePath, fileName);
+
+            }
+
             var pet = new Pet
             {
                 UserId = userId,
                 Name = petDto.Name,
                 Species = petDto.Species,
+                Gender = petDto.Gender,
                 Breed = petDto.Breed,
-                Color = petDto.Color,
+                ColorPri = petDto.ColorPri,
+                ColorSec = petDto.ColorSec,
                 Size = petDto.Size,
-                BirthDate = petDto.BirthDate
+                BirthDate = petDto.BirthDate,
+                Photo = photoPath // Salva o caminho da foto no banco
             };
 
             _context.Pets.Add(pet);

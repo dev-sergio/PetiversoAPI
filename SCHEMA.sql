@@ -18,8 +18,11 @@ CREATE TABLE Pets (
     UserId UNIQUEIDENTIFIER NOT NULL, -- Referência ao dono do pet
     Name NVARCHAR(100) NOT NULL, -- Nome do pet
     Species NVARCHAR(50) NOT NULL, -- Espécie do pet (ex.: cachorro, gato)
+	gender NVARCHAR(5) NOT NULL,
+	Photo NVARCHAR(300) NOT NULL, -- Caminho no sistema de arquivos onde a foto está armazenada
     Breed NVARCHAR(100) NULL, -- Raça (opcional)
-    Color NVARCHAR(50) NULL, -- Cor predominante (opcional)
+    ColorPri NVARCHAR(50) NOT NULL, -- Cor Primaria
+	ColorSec NVARCHAR(50) NULL, -- Cor Secundaria (opcional)
     Size NVARCHAR(20) NOT NULL, -- Porte (pequeno, médio, grande)
     BirthDate DATE NULL, -- Data de nascimento
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), -- Data de criação
@@ -50,10 +53,6 @@ CREATE TABLE LoginAttempts (
     AttemptedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),
     FOREIGN KEY (UserId) REFERENCES Users(UserId) ON DELETE SET NULL
 );
-
-
-
-
 
 
 CREATE INDEX IX_Users_Username ON Users(Username);
